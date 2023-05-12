@@ -92,28 +92,28 @@ def IsHeaderFile( filename ):
 
 
 def GetCompilationInfoForFile( filename ):
-  if IsHeaderFile( filename ):
-    basename = os.path.splitext( filename )[ 0 ]
-    for extension in SOURCE_EXTENSIONS:
-      replacement_file = basename + extension
-      if os.path.exists( replacement_file ):
-        compilation_info = database.GetCompilationInfoForFile(
-          replacement_file )
-        if compilation_info.compiler_flags_:
-          return compilation_info
-    return None
-  return database.GetCompilationInfoForFile( filename )
+  if not IsHeaderFile(filename):
+    return database.GetCompilationInfoForFile( filename )
+  basename = os.path.splitext( filename )[ 0 ]
+  for extension in SOURCE_EXTENSIONS:
+    replacement_file = basename + extension
+    if os.path.exists( replacement_file ):
+      compilation_info = database.GetCompilationInfoForFile(
+        replacement_file )
+      if compilation_info.compiler_flags_:
+        return compilation_info
+  return None
 
 
 def FlagsForFile( filename, **kwargs ):
   if database:
-    compilation_info = GetCompilationInfoForFile( filename )
-    if not compilation_info:
-      return None
+    if compilation_info := GetCompilationInfoForFile(filename):
+      final_flags = MakeRelativePathsInFlagsAbsolute(
+        compilation_info.compiler_flags_,
+        compilation_info.compiler_working_dir_ )
 
-    final_flags = MakeRelativePathsInFlagsAbsolute(
-      compilation_info.compiler_flags_,
-      compilation_info.compiler_working_dir_ )
+    else:
+      return None
 
   else:
     relative_to = DirectoryOfThisScript()
